@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 #coding: utf-8
 
-# BeautifulSoup será usado para verificar se o perfil da rede social realmente existe
-from bs4 import BeautifulSoup as bs
 # Networkx fará um gráfico interativo com conexões do e-mail alvo com as redes sociais e outros dados
 import networkx as nx #para criação de gráfico
 import matplotlib.pyplot as plt
@@ -51,9 +49,9 @@ def emailrep(email):
 
     r = requests.get(f'https://emailrep.io/{email}')
 
-    js = json.loads(r.text)
+    javaScript = json.loads(r.text)
 
-    profiles = js['details']['profiles']
+    profiles = javaScript['details']['profiles']
 
     graph.add_node(email)
 
@@ -85,7 +83,6 @@ def emailrep(email):
 def email_verifier(email):
     # email verification
     try:
-        domain = email.split('@')[-1]
         records = dns.resolver.query(domain,"MX")
         mxRecord = records[0].exchange
         mxRecord = str(mxRecord)
@@ -149,10 +146,10 @@ def linkedin(email):
     pass
 
 def github(email):
-    user = email.split('@')[0]
+    user_email = email.split('@')[0]
 
     # Para pegar dados básicos (localização, blog, nome, seguidores, seguindo e bio)
-    github_api_1 = requests.get(f'https://api.github.com/users/{user}')
+    github_api_1 = requests.get(f'https://api.github.com/users/{user_email}')
     print(github_api_1.status_code)
 
     if github_api_1.status_code == 200:
