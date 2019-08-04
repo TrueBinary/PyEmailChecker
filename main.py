@@ -3,7 +3,6 @@
 
 # BeautifulSoup será usado para verificar se o perfil da rede social realmente existe
 from bs4 import BeautifulSoup as bs
-
 # Networkx fará um gráfico interativo com conexões do e-mail alvo com as redes sociais e outros dados
 import networkx as nx #para criação de gráfico
 import matplotlib.pyplot as plt
@@ -24,8 +23,9 @@ import json
 
 email_example = 'bill@microsoft.com'
 parser = args.ArgumentParser()
-parser.add_argument("-e","--email",required=True, help=f"Você precisa colocar um email igual a esse {email_example}")
+parser.add_argument("-e","--email",required=True,type=str, help=f"Você precisa colocar um email igual a esse {email_example}")
 parsed = parser.parse_args()
+global email
 email = parsed.email
 
 # Iniciando gráfico
@@ -85,6 +85,7 @@ def emailrep(email):
 def email_verifier(email):
     # email verification
     try:
+        domain = email.split('@')[-1]
         records = dns.resolver.query(domain,"MX")
         mxRecord = records[0].exchange
         mxRecord = str(mxRecord)
@@ -175,6 +176,5 @@ def github(email):
 
 def main():
     emailrep(email)
-
 if __name__ == '__main__':
     main()
