@@ -66,19 +66,23 @@ def emailrep(email):
                 print(bold(bad('ERROR: ') + str(e)))
                 pass
             finally:
-                show_nodes(email)
+                show_nodes()
         if domain not in common_providers:
             try:
                 search_for_domain(email)
+                search_data_leak(email)
             except Exception as e:
                 print(bold(red('ERROR: ') + str(e)))
             finally:
-                show_nodes(email)    
+                show_nodes(email)
+        else:
+            try:
+                search_data_leak(email)
+                function(email)
+            except Exception as e:
+                print(bold(bad('ERROR: ') + str(e)))
 
-def search_for_domain(email):
-    domain = email.split('@')[-1]
-    username = email.split('@')[0]
-
+def email_verifier(email):
     # email verification
     try:
         records = dns.resolver.query(domain,"MX")
@@ -102,7 +106,12 @@ def search_for_domain(email):
         print(bold(bad('E-MAIL VERIFICATION ERROR: ') + str(e)))
         pass
 
+def search_data_leak(email):
     # Google -> vazamentos de dados do pastebin
+    
+    domain = email.split('@')[-1]
+    username = email.split('@')[0]
+
     try:
         pastebin = search(f'intext:"{email}" site:pastebin.com intext:"leak"')
 
