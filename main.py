@@ -6,30 +6,43 @@ from bs4 import BeautifulSoup as bs
 
 # Networkx fará um gráfico interativo com conexões do e-mail alvo com as redes sociais e outros dados
 import networkx as nx #para criação de gráfico
+import matplotlib.pyplot as plt
+
+# Google search
+from googlesearch import search
 
 import argparse as args 
-
+import dns.resolver
+import smtplib
 import webbrowser
 
 # huepy é para cores (bold = negrito, red = vermelho etc.)
 from huepy import *
 
-# para permutar
-from itertools import permutations
-
 import requests
 import json
 
-parser = args.ArgumentParser()
-parser.add_argument("-e","--email",required=True,help="Put the email you'll check")
-parsed = parser.parse_args()
-
-
-
 email_example = 'bill@microsoft.com'
+parser = args.ArgumentParser()
+parser.add_argument("-e","--email",required=True, help=f"Você precisa colocar um email igual a esse {email_example}")
+parsed = parser.parse_args()
 email = parsed.email
 
-def emailrep(email, functions):
+# Iniciando gráfico
+graph = nx.Graph()
+
+functions = ['github']
+
+# Caso seja diferente desses provedores, o script procurará o domínio para relação entre usuario e dominio
+common_providers = ['hotmail.com', 
+                    'gmail.com', 
+                    'protonmail.com', 
+                    'protonmail.ch', 
+                    'outlook.com',
+                    'tutanota.com',
+                    'keemail.me']
+
+def emailrep(email):
     ''' 
     a função emailrep (de emailrep.io) faz uma única requisição para a API.
     Após recolher as redes sociais que o e-mail está cadastrado, o script inicia funções
@@ -42,23 +55,82 @@ def emailrep(email, functions):
 
     profiles = js['details']['profiles']
 
-    for profile in profiles:
-        for function in functions:
-            if profile == function:
-                try:
-                    function(email)
-                except Exception as e:
-                    print(bold(red('ERROR: ') + str(e)))
+    graph.add_node(email)
 
-functions = ['linkedin',
-            'flickr',
-            'instagram',
-            'pinterest',
-            'tumblr',
-            'twitter']
+    for profile, function, provider in zip(profiles, functions, common_providers):
+        domain = email.split('@')[-1]
+        if profile == function:
+            try:
+                function(email)
+            except Exception as e:
+                print(bold(bad('ERROR: ') + str(e)))
+                pass
+            finally:
+                show_nodes(email)
+        if domain not in common_providers:
+            try:
+                search_for_domain(email)
+            except Exception as e:
+                print(bold(red('ERROR: ') + str(e)))
+            finally:
+                show_nodes(email)    
 
-# Iniciar gráfico
-G = nx.Graph()
+def search_for_domain(email):
+    domain = email.split('@')[-1]
+    username = email.split('@')[0]
+
+    # email verification
+    try:
+        records = dns.resolver.query(domain,"MX")
+        mxRecord = records[0].exchange
+        mxRecord = str(mxRecord)
+
+        server = smtplib.SMTP()
+        server.set_debuglevel(0)
+
+        server.connect(mxRecord)
+        server.helo(server.local_hostname)
+        server.mail(email)
+        code, message = server.rcpt(str(email))
+        server.quit()
+
+        if code == 250:
+            print("O DNS do email foi encontrado")
+        else:
+            print("Foi Impossivel de encontrar o dns deste email!")
+    except Exception as e:
+        print(bold(bad('E-MAIL VERIFICATION ERROR: ') + str(e)))
+        pass
+
+    # Google -> vazamentos de dados do pastebin
+    try:
+        pastebin = search(f'intext:"{email}" site:pastebin.com intext:"leak"')
+
+        for result in pastebin:
+            # adiciona nó de resultado no grafico
+            graph.add_node(f'Data leaked: {result}')
+
+            # conectar o nó ao e-mail
+            graph.add_edges_from([(email, f'Data leaked: {result}')])
+    except Exception as e:
+        print(bold(bad('GOOGLE ERROR: ') + str(e)))
+        pass
+
+def show_nodes(email):
+    pos = nx.spring_layout(graph)
+
+    # criar grafico
+    nx.draw(graph, 
+            with_labels=True, 
+            k=0.15, 
+            node_size=5000,
+            node_color='blue')
+
+    # salvar grafico em png
+    plt.savefig(email + '_connections.png')
+
+    # mostrar grafico
+    plt.show()
 
 def linkedin(email):
     ''' Usa o LinkedIn para recolher o nome e o estado '''
@@ -71,9 +143,14 @@ def github(email):
 
     # Para pegar dados básicos (localização, blog, nome, seguidores, seguindo e bio)
     github_api_1 = requests.get(f'https://api.github.com/users/{user}')
+    print(github_api_1.status_code)
 
     if github_api_1.status_code == 200:
+        # adicionar no do github
+        graph.add_node('Github')
 
+        # conectar no do github ao email
+        graph.add_edges_from([(email, 'Github')])
 
         github_js_1 = json.loads(github_api_1.text)
 
@@ -84,7 +161,11 @@ def github(email):
         following = github_js_1['following']
         location = github_js_1['location']
         login = github_js_1['login']
-
-        # adicionar nós
     else:
         pass
+
+def main():
+    emailrep(email)
+
+if __name__ == '__main__':
+    main()
