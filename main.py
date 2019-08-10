@@ -29,7 +29,34 @@ email = parsed.email
 # Iniciando gráfico
 graph = nx.Graph()
 
-functions = ['github']
+def github(email):
+    user_email = email.split('@')[0]
+
+    # Para pegar dados básicos (localização, blog, nome, seguidores, seguindo e bio)
+    github_api_1 = requests.get(f'https://api.github.com/users/{user_email}')
+    print(github_api_1.status_code)
+
+    if github_api_1.status_code == 200:
+        # adicionar no do github
+        graph.add_node(f'Github: {user_email}')
+
+        # conectar no do github ao email
+        graph.add_edges_from([(email, f'Github: {user_email}')])
+
+        github_js_1 = json.loads(github_api_1.text)
+
+        bio = github_js_1['bio']
+        company = github_js_1['company']
+        name = github_js_1['name']
+        followers = github_js_1['followers']
+        following = github_js_1['following']
+        location = github_js_1['location']
+        login = github_js_1['login']
+    else:
+        pass
+
+global functions
+functions = [github]
 
 # Caso seja diferente desses provedores, o script procurará o domínio para relação entre usuario e dominio
 common_providers = ['hotmail.com', 
@@ -78,7 +105,9 @@ def emailrep(email):
                 search_data_leak(email)
                 function(email)
             except Exception as e:
-                print(bold(bad('ERROR: ') + str(e)))
+                print(bold(bad('ERROR 1: ') + str(e)))
+            finally:
+            	show_nodes(email)
 
 def email_verifier(email):
     # email verification
@@ -146,32 +175,6 @@ def linkedin(email):
     print("O Seu Navegador ira se abrir para conferir se o email tem um perfil no linkedin")
     webbrowser.open(f'https://www.linkedin.com/sales/gmail/profile/viewByEmail/{email}')
     pass
-
-def github(email):
-    user_email = email.split('@')[0]
-
-    # Para pegar dados básicos (localização, blog, nome, seguidores, seguindo e bio)
-    github_api_1 = requests.get(f'https://api.github.com/users/{user_email}')
-    print(github_api_1.status_code)
-
-    if github_api_1.status_code == 200:
-        # adicionar no do github
-        graph.add_node('Github')
-
-        # conectar no do github ao email
-        graph.add_edges_from([(email, 'Github')])
-
-        github_js_1 = json.loads(github_api_1.text)
-
-        bio = github_js_1['bio']
-        company = github_js_1['company']
-        name = github_js_1['name']
-        followers = github_js_1['followers']
-        following = github_js_1['following']
-        location = github_js_1['location']
-        login = github_js_1['login']
-    else:
-        pass
 
 def main():
     emailrep(email)
