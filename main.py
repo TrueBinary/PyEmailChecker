@@ -23,7 +23,7 @@ email_example = 'bill@microsoft.com'
 parser = args.ArgumentParser()
 parser.add_argument("-e","--email",required=True,type=str, help=f"Você precisa colocar um email igual a esse {email_example}")
 parsed = parser.parse_args()
-global email
+
 email = parsed.email
 
 # Iniciando gráfico
@@ -67,7 +67,7 @@ def emailrep(email):
                 show_nodes()
         if domain not in common_providers:
             try:
-                search_for_domain(email)
+                email_verifier(email)
                 search_data_leak(email)
             except Exception as e:
                 print(bold(red('ERROR: ') + str(e)))
@@ -82,6 +82,8 @@ def emailrep(email):
 
 def email_verifier(email):
     # email verification
+    domain = email.split('@')[-1]
+
     try:
         records = dns.resolver.query(domain,"MX")
         mxRecord = records[0].exchange
