@@ -91,7 +91,7 @@ def emailrep(email):
                 print(bold(bad('ERROR: ') + str(e)))
                 pass
             finally:
-                show_nodes()
+                show_nodes(email)
         if domain not in common_providers:
             try:
                 email_verifier(email)
